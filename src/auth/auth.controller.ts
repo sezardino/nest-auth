@@ -1,13 +1,7 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegistrationDto } from './dto';
+import { JwtGuard } from './guards/jwt';
 
 @Controller('auth')
 export class AuthController {
@@ -17,24 +11,17 @@ export class AuthController {
   async register(@Body() dto: RegistrationDto) {
     const user = await this.authService.registration(dto);
 
-    if (!user) {
-      return new HttpException('User already exist', HttpStatus.BAD_REQUEST);
-    }
-
-    return user._id;
+    return user;
   }
 
   @Post('login')
   async login(@Body() dto: LoginDto) {
     const result = await this.authService.login(dto);
 
-    if (!result) {
-      return new HttpException('Wrong data', HttpStatus.BAD_REQUEST);
-    }
-
-    return result._id;
+    return result;
   }
 
+  @UseGuards(JwtGuard)
   @Get('users')
   users() {
     return 1;

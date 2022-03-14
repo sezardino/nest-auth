@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { getHashedPassword, isPasswordMatch, Roles } from 'src/common';
 
 import { Role, RoleDocument, User, UserDocument } from 'src/models';
 import { LoginDto, RegistrationDto } from './dto';
+import * as messages from './messages';
 
 @Injectable()
 export class AuthService {
@@ -13,15 +15,16 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
     private configService: ConfigService,
+    private jwtService: JwtService,
   ) {}
 
-  async registration(dto: RegistrationDto): Promise<false | UserDocument> {
+  async registration(dto: RegistrationDto): Promise<UserDocument> {
     const { email, name, password } = dto;
 
-    const existedUser = await this.userModel.findOne({ email });
+    const result = await this.userModel.findOne({ email });
 
-    if (existedUser) {
-      return false;
+    if (result) {
+      throw new UnauthorizedException(messages.USER_ALREADY_EXIST);
     }
 
     const userRole = await this.roleModel.findOne({ value: Roles.USER });
@@ -39,20 +42,28 @@ export class AuthService {
     return newUser;
   }
 
-  async login(dto: LoginDto): Promise<UserDocument | false> {
+  async login(dto: LoginDto): Promise<{ token: string }> {
     const { email, password } = dto;
-    const neededUser = await this.userModel.findOne({ email });
+    const neededUser = await this.validateUser(email);
 
-    if (!neededUser) {
-      return false;
-    }
-
-    const passwordMatch = isPasswordMatch(password, neededUser.password);
+    const passwordMatch = isPasswordMatch(neededUser.password, password);
 
     if (!passwordMatch) {
-      return false;
+      throw new UnauthorizedException(messages.PASSWORD_MISMATCH);
     }
 
-    return neededUser;
+    const payload = { email, role: neededUser.roles };
+
+    return { token: await this.jwtService.signAsync(payload) };
+  }
+
+  async validateUser(email: string): Promise<UserDocument> {
+    const result = await this.userModel.findOne({ email });
+
+    if (!result) {
+      throw new UnauthorizedException(messages.USER_NOT_FOUND);
+    }
+
+    return result;
   }
 }
