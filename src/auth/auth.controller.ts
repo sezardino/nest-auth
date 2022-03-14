@@ -7,7 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegistrationDto } from './dto';
+import { LoginDto, RegistrationDto } from './dto';
 
 @Controller('auth')
 export class AuthController {
@@ -25,8 +25,14 @@ export class AuthController {
   }
 
   @Post('login')
-  login() {
-    return 1;
+  async login(@Body() dto: LoginDto) {
+    const result = await this.authService.login(dto);
+
+    if (!result) {
+      return new HttpException('Wrong data', HttpStatus.BAD_REQUEST);
+    }
+
+    return result._id;
   }
 
   @Get('users')
