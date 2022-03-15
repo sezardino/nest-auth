@@ -34,7 +34,7 @@ export class AuthService {
       email,
       name,
       password: hashedPassword,
-      roles: [userRole],
+      roles: [userRole.value],
     });
 
     newUser.save();
@@ -52,8 +52,7 @@ export class AuthService {
       throw new UnauthorizedException(messages.PASSWORD_MISMATCH);
     }
 
-    const payload = { email, role: neededUser.roles };
-
+    const payload = { email, roles: neededUser.roles };
     return { token: await this.jwtService.signAsync(payload) };
   }
 

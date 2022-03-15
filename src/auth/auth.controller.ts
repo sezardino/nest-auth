@@ -1,7 +1,15 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  SetMetadata,
+  UseGuards,
+} from '@nestjs/common';
+import { Roles } from 'src/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegistrationDto } from './dto';
-import { JwtGuard } from './guards/jwt';
+import { RoleGuard, JwtGuard } from './guards';
 
 @Controller('auth')
 export class AuthController {
@@ -21,8 +29,9 @@ export class AuthController {
     return result;
   }
 
-  @UseGuards(JwtGuard)
   @Get('users')
+  @UseGuards(JwtGuard, RoleGuard)
+  @SetMetadata('roles', [Roles.ADMIN])
   users() {
     return 1;
   }

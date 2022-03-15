@@ -10,10 +10,15 @@ export class JWTStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: configService.get('JWS_SECRET'),
+      passReqToCallback: true,
+      ignoreExpiration: false,
+      expiresIn: '3 days',
     });
   }
 
-  async validate(payload: Pick<UserDocument, 'roles' | 'email'>) {
+  async validate(
+    payload: Pick<UserDocument, 'roles' | 'email'>,
+  ): Promise<Pick<UserDocument, 'roles' | 'email'>> {
     return payload;
   }
 }
